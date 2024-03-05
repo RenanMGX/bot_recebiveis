@@ -6,15 +6,16 @@ from Entities.credencital_load import Credential
 from time import sleep
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
+import asyncio
 
 class ImobmeBot:
-    def __init__(self, *, user, password, url) -> None:
+    def __init__(self, *, user:str, password:str, url:str) -> None:
         self.browser: webdriver.Chrome = webdriver.Chrome()
-        self.__url_principal = url
+        self.__url_principal:str = url
         self.browser.get(self.__url_principal)
         
-        self.__user = user
-        self.__password = password
+        self.__user:str = user
+        self.__password:str = password
         
         self._login()
     
@@ -163,7 +164,6 @@ class ImobmeBot:
                 return error
         except:
             pass
-            
         
         tbody = self._find_element(By.TAG_NAME, 'tbody')
         for tr in tbody.find_elements(By.TAG_NAME, 'tr'):

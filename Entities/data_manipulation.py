@@ -18,16 +18,27 @@ class XWtoDF:
             
             for sheet_name in wb.sheet_names:
                 sheet = wb.sheets[sheet_name]
+                sheet.api.AutoFilter.ShowAllData()
+                
+                sheet.range('Q1').value = 'Celula_Colorida'
+                
+                for row in range(len(sheet.range('A2').expand('down'))):
+                    if sheet.range(f'A{row+2}').color:
+                        sheet.range(f'Q{row+2}').value = 'colorido'
                 
                 
-                data: pd.DataFrame = sheet.range('A1').expand().options(pd.DataFrame, index=False, header=True).value
-                #data: pd.DataFrame = sheet.range('A1:AD1').expand('down').options(pd.DataFrame, index=False, header=True).value
                 
-                # for coluna in data.columns:
-                #     if pd.api.types.is_datetime64_any_dtype(data[coluna]):
-                #         data[coluna] = data[coluna].dt.to_pydatetime()
-                df[sheet_name] = data.replace(float('nan'), "")
-                #import pdb; pdb.set_trace()
+                data: pd.DataFrame = sheet.range('A1:Q1').expand('down').options(pd.DataFrame, index=False, header=True).value
+
+                data = data.replace(float('nan'), "")
+                data = data[data['Celula_Colorida'] != 'colorido']
+                
+                if 'pagamento' in sheet_name.lower():
+                    data = data[data['Contrato de juros de obra ?'] != '']
+                    import pdb; pdb.set_trace()
+                
+                df[sheet_name] = data
+                
         
         for app_open in xw.apps:
             if app_open.books[0].name == path.split("\\")[-1]:
@@ -37,6 +48,7 @@ class XWtoDF:
         
         return df
     
+    @staticmethod
     def save_excel(*, path:str, df:pd.DataFrame, sheet_name_to_save:str) -> None:
         app = xw.App(visible=False)
         dados_para_adicionar:list = df.values.tolist()
