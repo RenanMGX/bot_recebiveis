@@ -1,88 +1,126 @@
 from Entities.imobmebot import ImobmeBot
 from Entities.data_manipulation import XWtoDF
 from Entities.credencital_load import Credential
-from typing import Dict, List, Hashable, Any
+from datetime import datetime
+from typing import Dict, List
 import pandas as pd
 import traceback
-import asyncio
-import multiprocessing
 import xlwings as xw # type: ignore
+import os
 
 
-def gerar_contratos(df, credencial) -> None:
-    print('Iniciando task1')
-    bot_navegador = ImobmeBot(user=credencial['user'], password=credencial['password'], url="http://qas.patrimarengenharia.imobme.com/")
-    for dados in df: # type: ignore
+def gerar_contratos(*, df:pd.DataFrame, navegador:ImobmeBot) -> None:
+    print('\n\nCriando novos contratos')
+    novos_contratos:List[dict] = df.to_dict(orient="records")
+    
+    for dados in novos_contratos:
         if dados['Solicitação'] != "":
             continue
         print(f"{dados['Empreendimento']=}, {dados['Bloco']=}, {dados['Unidade']=} : Iniciado")
         try:
-            codigo = bot_navegador.executar_contratos(url="http://qas.patrimarengenharia.imobme.com/Contrato/", dados=dados)
+            codigo = navegador.executar_contratos(dados=dados)
             dados['Solicitação'] = codigo
+            log_error.save(operation="Contratos", status="Concluido",type_error="", descript=f"{dados['Empreendimento']=}, {dados['Bloco']=}, {dados['Unidade']=}, {codigo=}")
             print("        Concluido!")
         except Exception as error:
-            print(f"{type(error)} | {error}")
-            print("        Error!")
-            continue
+            log_error.save(operation="Contratos", status="Error", type_error=f"{type(error)} -> {error}", descript=f"{dados['Empreendimento']=}, {dados['Bloco']=}, {dados['Unidade']=} : ")
+            print(f"        Error! - {type(error)} -> {error}")
     
     novos_contratos_novo: pd.DataFrame = pd.DataFrame(novos_contratos) 
-    XWtoDF.save_excel(path=path, df=novos_contratos_novo, sheet_name_to_save='contratos')
+    try:
+        XWtoDF.save_excel(path=path, df=novos_contratos_novo, sheet_name_to_save='contratos')
+        log_error.save(operation="Salvar_Planilha", status="Concluido", type_error="", descript="arquivos salvos na planilha como sucesso")
+    except Exception as error:
+        log_error.save(operation="Salvar_Planilha", status="Error", type_error=str(error), descript=f"{type(error)} -> {error}")
 
     
 
-def gerar_pagamentos(df, credencial):
-    print('Iniciando task2')
-    print(df)
+def gerar_pagamentos(*, df:pd.DataFrame, navegador:ImobmeBot):
+    from selenium.common.exceptions import StaleElementReferenceException
+    print('\n\nExecutando Pagamentos!')
+    novos_pagamentos:List[dict] = df.to_dict(orient="records")
     
-    # bot_navegador2 = ImobmeBot(user=credencial['user'], password=credencial['password'], url="http://qas.patrimarengenharia.imobme.com/")
-    # for dados in df: # type: ignore
-    #     if dados['Solicitação'] != "":
-    #         continue
-    #     print(f"{dados['Empreendimento']=}, {dados['Bloco']=}, {dados['Unidade']=} : Iniciado")
-    #     try:
-    #         codigo = bot_navegador2.executar_contratos(url="http://qas.patrimarengenharia.imobme.com/Contrato/", dados=dados)
-    #         dados['Solicitação'] = codigo
-    #         print("        Concluido!")
-    #     except Exception as error:
-    #         print(f"{type(error)} | {error}")
-    #         print("        Error!")
-    #         continue
-
+    for dados in novos_pagamentos:
+        print(dados['NO_MUTUARIO'])
+        try:
+            navegador.executar_pagamentos(dados=dados)
+            log_error.save(operation="Pagamentos", status="Concluido", type_error="", descript=dados['NO_MUTUARIO'])
+            print("        Concluido!")
+        except ReferenceError as error:
+            log_error.save(operation="Pagamentos", status="Error", type_error=str(error), descript=f"{dados['NO_MUTUARIO']}")
+            print(f"        Error! -> {error}")
+        except TimeoutError as error:
+            log_error.save(operation="Pagamentos", status="Error", type_error=str(error), descript=f"{dados['NO_MUTUARIO']}")
+            print(f"        Error! -> {error}")
+        except StaleElementReferenceException as error:
+            log_error.save(operation="Pagamentos", status="Error", type_error=str(error), descript=f"{dados['NO_MUTUARIO']}, Message: stale element reference: stale element not found")
+            print(f"        Error! -> Message: stale element reference: stale element not found")
+        except Exception as error:
+            error_descript = traceback.format_exc().replace('\n', ' | ')
+            log_error.save(operation="Pagamentos", status="Error", type_error=str(error), descript=f"{dados['NO_MUTUARIO']}, {error_descript=}")
+            print(traceback.format_exc())
+        
+class LogOperation:
+    def __init__(self, date=datetime.now(), filename='registros.csv') -> None:
+        self.date:datetime = date
+        self.file_name:str = (filename + '.csv') if not filename.endswith('.csv') else filename
+        
+        if not os.path.exists(self.file_name):
+            with open(self.file_name, 'w', encoding='ISO-8859-1')as _file:
+                _file.write("data;operação;estatus;tipo;descrição\n")
+                
+    
+    def save(self, *, operation:str, status:str, type_error:str, descript:str) -> None:
+        for app_open in xw.apps:
+            if app_open.books[0].name == self.file_name:
+                app_open.kill()
+            elif app_open.books[0].name == 'Pasta1':
+                app_open.kill()
+        with open('registros.csv', 'a', encoding='ISO-8859-1')as _file:
+            _file.write(f"{self.date.strftime('%d/%m/%Y')};{operation};{status};{type_error};{descript}\n")
 
 if __name__ == "__main__":
-    multiprocessing.freeze_support()
-    #carregar aquivo
-    path = "#materiais\\Base - Lançamento Juros de Obra3.xlsx"
-    
-    for app_open in xw.apps:
-        if app_open.books[0].name == path.split("\\")[-1]:
-            app_open.kill()
-        elif app_open.books[0].name == 'Pasta1':
-            app_open.kill()
-    
-    #ler planilha
-    data_with_sheet:Dict[str, pd.DataFrame] = XWtoDF.read_excel(path)
-    
-    #separar dataframe por colunas
-    for sheet in data_with_sheet.keys():
-        if 'pagamento' in sheet.lower():
-            novos_pagamentos: pd.DataFrame = data_with_sheet[sheet]
-        if 'contratos' in sheet.lower():
-            novos_contratos:List[dict] = data_with_sheet[sheet].to_dict(orient="records")
-    
-    #import pdb; pdb.set_trace()
-    credencial = Credential.load("imbme_credential.json")
-    #http://qas.patrimarengenharia.imobme.com/
-    #https://patrimarengenharia.imobme.com/,
+    log_error: LogOperation = LogOperation()
+    try:
+        #carregar aquivo
+        path:str = "#materiais\\Base - Lançamento Juros de Obra3.xlsx"
+        
+        for app_open in xw.apps:
+            if app_open.books[0].name == path.split("\\")[-1]:
+                app_open.kill()
+            elif app_open.books[0].name == 'Pasta1':
+                app_open.kill()
+        
+        #ler planilha
+        dados:Dict[str, pd.DataFrame] = XWtoDF.read_excel(path)
+        try:
+            dados['novos_pagamentos']
+        except KeyError:
+            raise KeyError("a sheet Novos Pagamentos não foi encontrada!")
+        try:
+            dados['novos_contratos']
+        except KeyError:
+            raise KeyError("a sheet Novos Contratos não foi encontrada!")
+        
+        #import pdb; pdb.set_trace()
+        credencial:dict = Credential.load("imbme_credential.json")
+        #http://qas.patrimarengenharia.imobme.com/
+        #https://patrimarengenharia.imobme.com/,
+        bot_navegador:ImobmeBot = ImobmeBot(user=credencial['user'], password=credencial['password'], url="http://qas.patrimarengenharia.imobme.com/")
 
-    #task1 = multiprocessing.Process(target=gerar_contratos, args=(novos_contratos, credencial,))
-    #task1.start()
+        gerar_contratos(df=dados['novos_contratos'], navegador=bot_navegador)
+        
+        gerar_pagamentos(df=dados['novos_pagamentos'], navegador=bot_navegador)
+        
+        print("fim")
     
-    task2 = multiprocessing.Process(target=gerar_pagamentos, args=(novos_pagamentos, credencial,))
-    task2.start()
-    
-    #task1.join()
-    task2.join()
-    
+    except Exception as error:
+        path_log:str = "log_error\\"
+        if not os.path.exists(path_log):
+            os.makedirs(path_log)
+        
+        file_name:str = f"{path_log}{datetime.now().isoformat().replace(':', '.')}.txt"
+        with open(file_name, 'w')as _file:
+            _file.write(traceback.format_exc())
     
     
