@@ -1,6 +1,6 @@
 *#materiais
 *.vscode
-*imbme_credential.json
+*imobme_credential.json
 *registros.csv
 *log_error
 

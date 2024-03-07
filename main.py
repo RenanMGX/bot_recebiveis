@@ -103,7 +103,7 @@ if __name__ == "__main__":
             raise KeyError("a sheet Novos Contratos não foi encontrada!")
         
         #import pdb; pdb.set_trace()
-        credencial:dict = Credential.load("imbme_credential.json")
+        credencial:dict = Credential("imobme_credential.json").load()
         #http://qas.patrimarengenharia.imobme.com/
         #https://patrimarengenharia.imobme.com/,
         bot_navegador:ImobmeBot = ImobmeBot(user=credencial['user'], password=credencial['password'], url="http://qas.patrimarengenharia.imobme.com/")

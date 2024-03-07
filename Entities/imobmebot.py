@@ -268,7 +268,7 @@ class ImobmeBot:
         return data_final
     
 if __name__ == "__main__":
-    credencial:dict = Credential.load("imbme_credential.json")
+    #credencial:dict = Credential.load("imbme_credential.json")
     #bot_navegador = ImobmeBot(user=credencial['user'], password=credencial['password'])
     
     #bot_navegador.executar_contratos(url="http://qas.patrimarengenharia.imobme.com/Contrato/")
