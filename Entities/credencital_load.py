@@ -24,7 +24,7 @@ class Credential:
         
         if not os.path.exists(self.path):
             with open(self.path, 'w')as _file:
-                json.dump({"user": "", "password": ""},_file)
+                json.dump({"user": "", "password": "", "key": 0},_file)
             raise FileNotFoundError(f"{self.path=} não existe! então foi criar uma no repositorio, edite as credenciais e execute o codigo novamente!")
 
         with open(self.path, 'r')as _file:
