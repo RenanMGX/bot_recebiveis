@@ -12,15 +12,16 @@ import qasync
 import sys
 import pandas as pd
 import traceback
-#import xlwings as xw # type: ignore
+import xlwings as xw # type: ignore
 #import os
 
 from typing import Dict
 from Entities.credencital_load import Credential
 from tkinter import filedialog
 from Entities.data_manipulation import XWtoDF
-from time import sleep
 from PyQt5 import QtCore, QtGui, QtWidgets
+from Entities.imobmebot import ImobmeBot
+from main import gerar_contratos, gerar_pagamentos
 
 class Ui_Interface(object):
     def __init__(self):
@@ -28,7 +29,7 @@ class Ui_Interface(object):
         
     def setupUi(self, Interface):
         Interface.setObjectName("Interface")
-        Interface.resize(433, 181)
+        Interface.resize(450, 200)
         Interface.setCursor(QtGui.QCursor(QtCore.Qt.ArrowCursor)) #type: ignore
         
         self.horizontalLayoutWidget = QtWidgets.QWidget(Interface)
@@ -54,6 +55,7 @@ class Ui_Interface(object):
         self.multi_tela = QtWidgets.QStackedWidget(self.horizontalLayoutWidget)
         self.multi_tela.setObjectName("multi_tela")
         
+        #index tela: 0
         self.login_senha = QtWidgets.QWidget()
         self.login_senha.setObjectName("login_senha")
         
@@ -94,7 +96,7 @@ class Ui_Interface(object):
         
         self.botao_salvar = QtWidgets.QPushButton(self.login_senha)
         self.botao_salvar.setEnabled(True)
-        self.botao_salvar.setGeometry(QtCore.QRect(108, 120, 91, 23))
+        self.botao_salvar.setGeometry(QtCore.QRect(30, 120, 91, 23))
         #self.botao_salvar.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor)) #type: ignore
         self.botao_salvar.setTabletTracking(False)
         self.botao_salvar.setAcceptDrops(False)
@@ -109,33 +111,63 @@ class Ui_Interface(object):
         
         self.multi_tela.addWidget(self.login_senha)
         
-        self.vazio = QtWidgets.QWidget()
-        self.vazio.setObjectName("vazio")
+        #index tela: 1
+        self.tela_arquivo = QtWidgets.QWidget()
+        self.tela_arquivo.setObjectName("Tela Arquivo")
         
-        self.carregar_arquivos = QtWidgets.QPushButton(self.vazio)
+        self.carregar_arquivos = QtWidgets.QPushButton(self.tela_arquivo)
         self.carregar_arquivos.setObjectName("Carregar Arquivo")
-        self.carregar_arquivos.setGeometry(QtCore.QRect(108, 00, 110, 23))
+        self.carregar_arquivos.setGeometry(QtCore.QRect(100, 00, 110, 23))
         self.carregar_arquivos.clicked.connect(self.carregar_planilha)
         
-        self.texto_retorno = QtWidgets.QLabel(self.vazio)
+        self.texto_retorno = QtWidgets.QLabel(self.tela_arquivo)
         self.texto_retorno.setObjectName("Texto Retorno")
         self.texto_retorno.setGeometry(QtCore.QRect(30, 30, 300, 63))
         self.texto_retorno.setWordWrap(True)
         self.texto_retorno.setText("")
         
-        self.iniciar_processo = QtWidgets.QPushButton(self.vazio)
-        self.iniciar_processo.setObjectName("Iniciar Processos")
-        self.iniciar_processo.setGeometry(QtCore.QRect(108, 125, 110, 23))
-        self.iniciar_processo.setVisible(False)
-        self.iniciar_processo.clicked.connect(self.iniciar)
+        # self.iniciar_contratos = QtWidgets.QPushButton(self.tela_arquivo)
+        # self.iniciar_contratos.setObjectName("Iniciar Contratos")
+        # self.iniciar_contratos.setGeometry(QtCore.QRect(180, 125, 110, 23))
+        # self.iniciar_contratos.setVisible(True)
+        # self.iniciar_contratos.clicked.connect(self.executar_contratos)
         
-        self.multi_tela.addWidget(self.vazio)
+        self.avancar = QtWidgets.QPushButton(self.tela_arquivo)
+        self.avancar.setObjectName("Avançar")
+        self.avancar.setGeometry(QtCore.QRect(100, 125, 110, 23))
+        self.avancar.setVisible(False)
+        self.avancar.clicked.connect(self.avancar_pagina)
+        
+        self.multi_tela.addWidget(self.tela_arquivo)
+        
+        #index tela: 2
+        self.tela_executar = QtWidgets.QWidget()
+        self.tela_executar.setObjectName("Tela Arquivo")
+        
+        self.caixa_contratos = QtWidgets.QCheckBox(self.tela_executar)
+        self.caixa_contratos.setObjectName("Caixa Contratos")
+        self.caixa_contratos.setGeometry(QtCore.QRect(100, 30, 110, 23))
+        self.caixa_contratos.setText("")
+        
+        self.caixa_pagamentos = QtWidgets.QCheckBox(self.tela_executar)
+        self.caixa_pagamentos.setObjectName("Caixa Pagamentos")
+        self.caixa_pagamentos.setGeometry(QtCore.QRect(100, 50, 110, 23))
+        self.caixa_pagamentos.setText("Pagamentos")
+        
+        self.iniciar = QtWidgets.QPushButton(self.tela_executar)
+        self.iniciar.setObjectName("Iniciar")
+        self.iniciar.setGeometry(QtCore.QRect(100, 100, 110, 23))
+        self.iniciar.setVisible(True)
+        self.iniciar.clicked.connect(self.iniciar_processo)
+        
+        self.multi_tela.addWidget(self.tela_executar)
         
         self.box_principal.addWidget(self.multi_tela)
 
         self.retranslateUi(Interface)
         self.multi_tela.setCurrentIndex(1)
         QtCore.QMetaObject.connectSlotsByName(Interface)
+        
         
        
     def retranslateUi(self, Interface):
@@ -146,13 +178,23 @@ class Ui_Interface(object):
         
         self.carregar_arquivos.setText(self.__translate("Interface", "Carregar Planilha"))
         
-        self.iniciar_processo.setText(self.__translate("Interface", "Iniciar Processos"))
+        # self.iniciar_contratos.setText(self.__translate("Interface", "Iniciar Contratos"))
+        # self.iniciar_pagamentos.setText(self.__translate("Interface", "Iniciar Pagamentos"))
+        self.iniciar.setText(self.__translate("Interface", "Iniciar"))
+        
+        self.avancar.setText(self.__translate("Interface", "Avançar"))
         
         self.texto_login.setText(self.__translate("Interface", "Login"))
         
         self.texto_senha.setText(self.__translate("Interface", "Senha"))
         
         self.botao_salvar.setText(self.__translate("Interface", "Salvar"))
+        
+        self.caixa_contratos.setText(self.__translate("Interface", "Contratos"))
+        self.caixa_pagamentos.setText(self.__translate("Interface", "Pagamentos"))
+
+    def test(self):
+        print(self.caixa_contratos.isChecked())
     
     def ir_tela_login(self):
         self.multi_tela.setCurrentIndex(0)
@@ -173,6 +215,16 @@ class Ui_Interface(object):
         password = self.campo_senha.text()
         credencial.salvar(user=login, password=password)
         self.fechar_tela_login()
+        
+    def avancar_pagina(self):
+        self.multi_tela.setCurrentIndex(2)
+        
+        self.texto_retorno.setText("")
+        self.avancar.setVisible(False)
+        
+        self.logar.setText(self.__translate("Interface", "Voltar"))
+        self.logar.clicked.disconnect()
+        self.logar.clicked.connect(self.fechar_tela_login)
         
     
     def carregar_planilha(self):
@@ -216,27 +268,51 @@ class Ui_Interface(object):
             self.texto_retorno.setText(texto_para_exibir)
             
             if valido:
-                self.iniciar_processo.setVisible(True)
+                # self.iniciar_contratos.setVisible(True)
+                # self.iniciar_pagamentos.setVisible(True)
+                for app_open in xw.apps:
+                    if app_open.books[0].name == self.path.split("\\")[-1]:
+                        app_open.kill()
+                    elif app_open.books[0].name == 'Pasta1':
+                        app_open.kill()
+                        
+                self.dados:Dict[str, pd.DataFrame] = XWtoDF.read_excel(self.path)
+                self.avancar.setVisible(True)
+                
+                
         except Exception as error:
+            print(traceback.format_exc())
             self.texto_retorno.setText(traceback.format_exc())
         finally:    
             Interface.show()
             Interface.raise_()
             Interface.activateWindow()
     
-    def iniciar(self):
+
+    def iniciar_processo(self):
         asyncio.create_task(self.start_process())
     async def start_process(self):
         Interface.hide()
         try:
-            pass
+            bot_navegador:ImobmeBot = ImobmeBot(user=credencial.load()['user'], password=credencial.load()['password'], url="http://qas.patrimarengenharia.imobme.com/")
+            
+            if self.caixa_contratos.isChecked():
+                gerar_contratos(df=self.dados['novos_contratos'], navegador=bot_navegador, path=self.path)
+            
+            if self.caixa_pagamentos.isChecked():
+                gerar_pagamentos(df=self.dados['novos_pagamentos'], navegador=bot_navegador)
+                
+            self.texto_retorno.setText("Concluido!")
+            self.logar.clicked.connect(self.fechar_tela_login)
+                
         except Exception as error:
-            pass
+            print(traceback.format_exc())
+            self.texto_retorno.setText(traceback.format_exc())
         finally:
             Interface.show()
             Interface.raise_()
             Interface.activateWindow()
-
+            
 
 if __name__ == "__main__":
     credencial = Credential("imobme_credential")

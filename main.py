@@ -9,8 +9,9 @@ import xlwings as xw # type: ignore
 import os
 
 
-def gerar_contratos(*, df:pd.DataFrame, navegador:ImobmeBot) -> None:
+def gerar_contratos(*, df:pd.DataFrame, navegador:ImobmeBot, path:str) -> None:
     print('\n\nCriando novos contratos')
+    log_error: LogOperation = LogOperation()
     novos_contratos:List[dict] = df.to_dict(orient="records")
     
     for dados in novos_contratos:
@@ -31,16 +32,19 @@ def gerar_contratos(*, df:pd.DataFrame, navegador:ImobmeBot) -> None:
         XWtoDF.save_excel(path=path, df=novos_contratos_novo, sheet_name_to_save='contratos')
         log_error.save(operation="Salvar_Planilha", status="Concluido", type_error="", descript="arquivos salvos na planilha como sucesso")
     except Exception as error:
+        print(traceback.format_exc())
         log_error.save(operation="Salvar_Planilha", status="Error", type_error=str(error), descript=f"{type(error)} -> {error}")
 
     
 
 def gerar_pagamentos(*, df:pd.DataFrame, navegador:ImobmeBot):
     from selenium.common.exceptions import StaleElementReferenceException
+    log_error: LogOperation = LogOperation()
     print('\n\nExecutando Pagamentos!')
     novos_pagamentos:List[dict] = df.to_dict(orient="records")
     
     for dados in novos_pagamentos:
+        
         print(dados['NO_MUTUARIO'])
         try:
             navegador.executar_pagamentos(dados=dados)
@@ -108,7 +112,7 @@ if __name__ == "__main__":
         #https://patrimarengenharia.imobme.com/,
         bot_navegador:ImobmeBot = ImobmeBot(user=credencial['user'], password=credencial['password'], url="http://qas.patrimarengenharia.imobme.com/")
 
-        gerar_contratos(df=dados['novos_contratos'], navegador=bot_navegador)
+        gerar_contratos(df=dados['novos_contratos'], navegador=bot_navegador, path=path)
         
         gerar_pagamentos(df=dados['novos_pagamentos'], navegador=bot_navegador)
         
