@@ -43,10 +43,16 @@ class ImobmeBot:
         
         raise Exception(f"{by=}, {target=} | não foi encontrado!")
     
-    def _login(self) -> None:
+    def _login(self, tentar=False) -> None:
+        if tentar:
+            try:
+                sleep(1)
+                self.browser.find_element(By.ID, 'login')
+            except:
+                return
         self.browser.get(self.__url_principal)
-        self._find_element(by=By.ID, target='login').send_keys(self.__user) 
-        self._find_element(by=By.ID, target='password').send_keys(self.__password)
+        self._find_element(by=By.ID, target='login').send_keys(str(self.__user)) 
+        self._find_element(by=By.ID, target='password').send_keys(str(self.__password))
         self._find_element(by=By.ID, target='password').send_keys(Keys.RETURN) 
                     
         if self._find_element(by=By.XPATH, target='/html/body/div[1]/div/div/div/div[2]/form/div/ul/li', timeout=1, force=True).text == 'Login não encontrado.':
@@ -58,6 +64,7 @@ class ImobmeBot:
         self._find_element(by=By.XPATH, target='/html/body/div[2]/div[3]/div/button[1]/span', timeout=2, force=True).click()
                     
     def executar_contratos(self, *, dados:dict) -> str:
+        self._login(tentar=True)
         self.browser.get(self.__url_principal + 'Contrato/')
         
         #aba pesquisa
@@ -105,15 +112,15 @@ class ImobmeBot:
         
         while len(self._find_element(By.ID, 'TaxaJuros').get_attribute('value')) > 0: # type: ignore
             self._find_element(By.ID, 'TaxaJuros').send_keys(Keys.BACK_SPACE)
-        self._find_element(By.ID, 'TaxaJuros').send_keys(dados['Juros (a.a.)']) # Juros
+        self._find_element(By.ID, 'TaxaJuros').send_keys(str(dados['Juros (a.a.)'])) # Juros
         
         while len(self._find_element(By.ID, 'TaxaMulta').get_attribute('value')) > 0: # type: ignore
             self._find_element(By.ID, 'TaxaMulta').send_keys(Keys.BACK_SPACE)
-        self._find_element(By.ID, 'TaxaMulta').send_keys(dados['Multa']) # Multa
+        self._find_element(By.ID, 'TaxaMulta').send_keys(str(dados['Multa'])) # Multa
         
         while len(self._find_element(By.ID, 'TaxaMora').get_attribute('value')) > 0: # type: ignore
             self._find_element(By.ID, 'TaxaMora').send_keys(Keys.BACK_SPACE)
-        self._find_element(By.ID, 'TaxaMora').send_keys(dados['Mora (a.m.)']) # Mora
+        self._find_element(By.ID, 'TaxaMora').send_keys(str(dados['Mora (a.m.)'])) # Mora
         
         indice_pre_chave:WebElement = self._find_element(By.ID, 'IndicePre') # Índice Pré-Chave
         for option in indice_pre_chave.find_elements(By.TAG_NAME, 'option'):
@@ -141,7 +148,7 @@ class ImobmeBot:
         
         while len(self._find_element(By.ID, 'ValorParcela').get_attribute('value')) > 0: # type: ignore
             self._find_element(By.ID, 'ValorParcela').send_keys(Keys.BACK_SPACE)
-        self._find_element(By.ID, 'ValorParcela').send_keys(dados['VR_PAGO']) # Valor Parcela
+        self._find_element(By.ID, 'ValorParcela').send_keys(str(dados['VR_PAGO'])) # Valor Parcela
         
         #adicionar data de vencimento
         data_mais_30_dias:datetime = datetime.now() + relativedelta(days=30)
@@ -176,11 +183,12 @@ class ImobmeBot:
         return codigo
         
     def executar_pagamentos(self, *, dados:dict) -> None:
+        self._login(tentar=True)
         self.browser.get(self.__url_principal + 'Contrato/')
 
         self.wait_load(wait_first=1)   
         self._find_element(By.ID, 'Keyword').clear()  
-        self._find_element(By.ID, 'Keyword').send_keys(dados['NO_MUTUARIO']) 
+        self._find_element(By.ID, 'Keyword').send_keys(str(dados['NO_MUTUARIO'])) 
         
         # import pdb; pdb.set_trace()
         # self._find_element(By.ID, 'feedback-loader').get_attribute('style')
@@ -225,7 +233,7 @@ class ImobmeBot:
         
         while len(self._find_element(By.ID, 'ValorParcela').get_attribute('value')) > 0: # type: ignore
             self._find_element(By.ID, 'ValorParcela').send_keys(Keys.BACK_SPACE)
-        self._find_element(By.ID, 'ValorParcela').send_keys(dados['VR_PAGO']) # Valor Parcela
+        self._find_element(By.ID, 'ValorParcela').send_keys(str(dados['VR_PAGO'])) # Valor Parcela
         
         tabela_contratos:WebElement = self._find_element(By.ID, 'tab-serie')
         contratos_listados:list = self._find_element(By.TAG_NAME, 'tbody', browser=tabela_contratos).text.split('\n')

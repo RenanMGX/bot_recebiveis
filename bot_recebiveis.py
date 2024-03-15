@@ -301,7 +301,8 @@ class Ui_Interface(object):
             
             if self.caixa_pagamentos.isChecked():
                 gerar_pagamentos(df=self.dados['novos_pagamentos'], navegador=bot_navegador)
-                
+                    
+            print("\nConcluido!")    
             self.texto_retorno.setText("Concluido!")
             self.logar.clicked.connect(self.fechar_tela_login)
                 

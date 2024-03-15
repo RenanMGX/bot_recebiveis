@@ -55,8 +55,10 @@ class XWtoDF:
                 
                 if '#1_' in sheet_name.lower():#Novo Pagamento
                     df['novos_pagamentos'] = data
+                    #import pdb; pdb.set_trace()
                 elif '#2_' in sheet_name.lower(): #Novos Contratos'
                     df['novos_contratos'] = data
+                    
                     
         for app_open in xw.apps:
             if app_open.books[0].name == path.split("\\")[-1]:
@@ -92,4 +94,4 @@ class XWtoDF:
                 app_open.kill()
 
 if __name__ == "__main__":
-    pass
+    dados = XWtoDF.read_excel("#materiais/planilha para testes.xlsx")
