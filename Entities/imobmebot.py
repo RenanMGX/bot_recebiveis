@@ -17,6 +17,7 @@ class ImobmeBot:
             self.__url_principal = url
             
         self.browser.get(self.__url_principal)
+        self.browser.get(self.__url_principal)
         
         self.__user:str = user
         self.__password:str = password
@@ -51,6 +52,7 @@ class ImobmeBot:
             except:
                 return
         self.browser.get(self.__url_principal)
+        self.browser.get(self.__url_principal)
         self._find_element(by=By.ID, target='login').send_keys(str(self.__user)) 
         self._find_element(by=By.ID, target='password').send_keys(str(self.__password))
         self._find_element(by=By.ID, target='password').send_keys(Keys.RETURN) 
@@ -66,10 +68,11 @@ class ImobmeBot:
     def executar_contratos(self, *, dados:dict) -> str:
         self._login(tentar=True)
         self.browser.get(self.__url_principal + 'Contrato/')
+        self.browser.get(self.__url_principal + 'Contrato/')
         
         #aba pesquisa
         campo_empreendimento:WebElement = self._find_element(By.ID, 'EmpreendimentoId_chzn')
-        self.wait_load(wait_first=1)
+        self.wait_load()
         campo_empreendimento.click()
         
         ul_emp:WebElement = self._find_element(By.TAG_NAME, 'ul', browser=campo_empreendimento)
@@ -78,7 +81,7 @@ class ImobmeBot:
                 li_emp.click()
                 
         campo_bloco:WebElement = self._find_element(By.ID, 'BlocoId_chzn')
-        self.wait_load(wait_first=1)
+        self.wait_load()
         campo_bloco.click()
         
         ul_bloco:WebElement = self._find_element(By.TAG_NAME, 'ul', browser=campo_bloco)
@@ -87,7 +90,7 @@ class ImobmeBot:
                 li_bloco.click()
         
         campo_unidade:WebElement = self._find_element(By.ID, 'UnidadeId_chzn')
-        self.wait_load(wait_first=1)
+        self.wait_load()
         campo_unidade.click()
         
         if isinstance(dados['Unidade'], float):
@@ -160,7 +163,7 @@ class ImobmeBot:
         self._find_element(By.ID, 'DataPrimeiraParcela').send_keys(data_final.strftime('%d%m%Y'))# Data Vencimento
         
         #import pdb; pdb.set_trace()
-        self.wait_load(wait_first=1)
+        self.wait_load()
         self._find_element(By.ID, 'btnSerieAdd').send_keys(Keys.ENTER)
         
         self._find_element(By.ID, 'serieEdit', timeout=60)
@@ -185,8 +188,9 @@ class ImobmeBot:
     def executar_pagamentos(self, *, dados:dict) -> None:
         self._login(tentar=True)
         self.browser.get(self.__url_principal + 'Contrato/')
+        self.browser.get(self.__url_principal + 'Contrato/')
 
-        self.wait_load(wait_first=1)   
+        self.wait_load()   
         self._find_element(By.ID, 'Keyword').clear()  
         self._find_element(By.ID, 'Keyword').send_keys(str(dados['NO_MUTUARIO'])) 
         
@@ -197,14 +201,13 @@ class ImobmeBot:
             self._find_element(By.XPATH, '/html/body/div/div/section/div[2]/div/div/div[2]/form/div[1]/div/a/abbr', timeout=1, force=True).click()
             self.wait_load()
         
-        self.wait_load(wait_first=1)
+        self.wait_load()
         if self.browser.find_element(By.TAG_NAME, 'tbody').text == 'Nenhum registro':
             raise TimeoutError("Nenhum contrato Encontrado")
         
-        self.wait_load(wait_first=1)
+        self.wait_load(wait_first=2)
         tbody:WebElement = self._find_element(By.ID, 'result-table')
         contratos_encontrador:list = tbody.find_element(By.TAG_NAME, 'tbody').text.split('\n')
-        
         
         numero_endereco_contrato:list = []
         for num in range(len(contratos_encontrador)): 
@@ -254,10 +257,10 @@ class ImobmeBot:
         
         #self._find_element(By.XPATH, '//*[@id="Footer"]/div/button')
 
-    def wait_load(self, wait_first=0.5) -> None:
+    def wait_load(self, wait_first=1) -> None:
         sleep(wait_first)
         while self._find_element(By.ID, 'feedback-loader').get_attribute('style') == 'display: block;':
-            sleep(0.25)
+            sleep(0.50)
     
     @staticmethod
     def calcular_datas_vencimento(data:datetime) -> datetime:

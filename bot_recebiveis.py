@@ -172,7 +172,7 @@ class Ui_Interface(object):
        
     def retranslateUi(self, Interface):
         self.__translate = QtCore.QCoreApplication.translate
-        Interface.setWindowTitle(self.__translate("Interface", "Dialog"))
+        Interface.setWindowTitle(self.__translate("Interface", f"Bot Recebiveis | {version} | {choose_mod}"))
         
         self.logar.setText(self.__translate("Interface", "Logar"))
         
@@ -279,22 +279,21 @@ class Ui_Interface(object):
                 self.dados:Dict[str, pd.DataFrame] = XWtoDF.read_excel(self.path)
                 self.avancar.setVisible(True)
                 
-                
         except Exception as error:
             print(traceback.format_exc())
-            self.texto_retorno.setText(traceback.format_exc())
+            self.texto_retorno.setText(f"{error}")
+            self.fechar_tela_login()
         finally:    
             Interface.show()
             Interface.raise_()
             Interface.activateWindow()
-    
 
     def iniciar_processo(self):
         asyncio.create_task(self.start_process())
     async def start_process(self):
         Interface.hide()
         try:
-            bot_navegador:ImobmeBot = ImobmeBot(user=credencial.load()['user'], password=credencial.load()['password'], url="http://qas.patrimarengenharia.imobme.com/")
+            bot_navegador:ImobmeBot = ImobmeBot(user=credencial.load()['user'], password=credencial.load()['password'], url=url_execute)
             
             if self.caixa_contratos.isChecked():
                 gerar_contratos(df=self.dados['novos_contratos'], navegador=bot_navegador, path=self.path)
@@ -308,7 +307,8 @@ class Ui_Interface(object):
                 
         except Exception as error:
             print(traceback.format_exc())
-            self.texto_retorno.setText(traceback.format_exc())
+            self.texto_retorno.setText(f"{error}")
+            self.fechar_tela_login()
         finally:
             Interface.show()
             Interface.raise_()
@@ -316,6 +316,14 @@ class Ui_Interface(object):
             
 
 if __name__ == "__main__":
+    version = "Beta 1.0"
+    
+    modos = {"prd": "https://patrimarengenharia.imobme.com/",
+            "qas": "http://qas.patrimarengenharia.imobme.com/"}
+    
+    choose_mod = "prd"
+    url_execute = modos[choose_mod]
+    
     credencial = Credential("imobme_credential")
     
     app = QtWidgets.QApplication(sys.argv)
