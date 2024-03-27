@@ -316,7 +316,7 @@ class Ui_Interface(object):
             
 
 if __name__ == "__main__":
-    version = "Beta 1.0"
+    version = "Beta 1.1"
     
     modos = {"prd": "https://patrimarengenharia.imobme.com/",
             "qas": "http://qas.patrimarengenharia.imobme.com/"}

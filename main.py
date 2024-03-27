@@ -33,7 +33,8 @@ def gerar_contratos(*, df:pd.DataFrame, navegador:ImobmeBot, path:str) -> None:
         log_error.save(operation="Salvar_Planilha", status="Concluido", type_error="", descript="arquivos salvos na planilha como sucesso")
     except Exception as error:
         print(traceback.format_exc())
-        log_error.save(operation="Salvar_Planilha", status="Error", type_error=str(error), descript=f"{type(error)} -> {error}")
+        error_descript = traceback.format_exc().replace('\n', ' | ')
+        log_error.save(operation="Salvar_Planilha", status="Error", type_error=str(error), descript=f"{type(error)} -> {error_descript}")
 
     
 
