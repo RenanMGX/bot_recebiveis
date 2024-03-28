@@ -219,7 +219,7 @@ class ImobmeBot:
         elif len(numero_endereco_contrato) <= 0:
             raise ReferenceError("não foi encontrado nenhum contrato ativo")
         
-        self.wait_load()
+        self.wait_load(wait_first=2)
         self._find_element(By.XPATH, f'//*[@id="result-table"]/tbody/tr[{numero_endereco_contrato[0]}]').click()
         
         self._find_element(By.XPATH, '//*[@id="AgreementTabs"]/li[2]/a').click()
