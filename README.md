@@ -1,4 +1,4 @@
-# Sistema de Gerenciamento e Interação Bot
+# Sistema de Gerenciamento e Interação Bot - ImmoFinBot
 
 Este programa é uma solução automatizada destinada à gestão de interações e processamento de dados, enfocando operações financeiras e imobiliárias. Ele integra um sistema de bots para facilitar a comunicação e a execução de tarefas, visando otimizar a eficiência operacional. Configurado através de um conjunto de scripts Python, o sistema oferece ferramentas para manipulação de dados, carregamento de credenciais, e interações específicas do domínio. Ideal para empresas em busca de automação e melhorias na gestão de recebíveis e atendimento.
 
