@@ -29,7 +29,7 @@ def gerar_contratos(*, df:pd.DataFrame, navegador:ImobmeBot, path:str) -> None:
     
     novos_contratos_novo: pd.DataFrame = pd.DataFrame(novos_contratos) 
     try:
-        XWtoDF.save_excel(path=path, df=novos_contratos_novo, sheet_name_to_save='contratos')
+        XWtoDF.save_excel(path=path, df=novos_contratos_novo, sheet_name_to_save='#2_')
         log_error.save(operation="Salvar_Planilha", status="Concluido", type_error="", descript="arquivos salvos na planilha como sucesso")
     except Exception as error:
         print(traceback.format_exc())
@@ -38,7 +38,7 @@ def gerar_contratos(*, df:pd.DataFrame, navegador:ImobmeBot, path:str) -> None:
 
     
 
-def gerar_pagamentos(*, df:pd.DataFrame, navegador:ImobmeBot):
+def gerar_pagamentos(*, df:pd.DataFrame, navegador:ImobmeBot, path:str):
     from selenium.common.exceptions import StaleElementReferenceException
     log_error: LogOperation = LogOperation()
     print('\n\nExecutando Pagamentos!')
@@ -50,20 +50,35 @@ def gerar_pagamentos(*, df:pd.DataFrame, navegador:ImobmeBot):
         try:
             navegador.executar_pagamentos(dados=dados)
             log_error.save(operation="Pagamentos", status="Concluido", type_error="", descript=dados['NO_MUTUARIO'])
+            dados['Status_Script'] = "Concluido"
             print("        Concluido!")
         except ReferenceError as error:
             log_error.save(operation="Pagamentos", status="Error", type_error=str(error), descript=f"{dados['NO_MUTUARIO']}")
+            dados['Status_Script'] = str(error)
             print(f"        Error! -> {error}")
         except TimeoutError as error:
             log_error.save(operation="Pagamentos", status="Error", type_error=str(error), descript=f"{dados['NO_MUTUARIO']}")
+            dados['Status_Script'] = str(error)
             print(f"        Error! -> {error}")
         except StaleElementReferenceException as error:
             log_error.save(operation="Pagamentos", status="Error", type_error=str(error), descript=f"{dados['NO_MUTUARIO']}, Message: stale element reference: stale element not found")
+            dados['Status_Script'] = str(error)
             print(f"        Error! -> Message: stale element reference: stale element not found")
         except Exception as error:
             error_descript = traceback.format_exc().replace('\n', ' | ')
             log_error.save(operation="Pagamentos", status="Error", type_error=str(error), descript=f"{dados['NO_MUTUARIO']}, {error_descript=}")
+            dados['Status_Script'] = str(error).replace("\n", "|")
             print(traceback.format_exc())
+            
+    novos_pagamentos_novo: pd.DataFrame = pd.DataFrame(novos_pagamentos) 
+    try:
+        XWtoDF.save_excel_pagamento(path=path, df=novos_pagamentos_novo, sheet_name_to_save='#1_')
+        log_error.save(operation="Salvar_Planilha", status="Concluido", type_error="", descript="arquivos salvos na planilha como sucesso")
+    except Exception as error:
+        print(traceback.format_exc())
+        error_descript = traceback.format_exc().replace('\n', ' | ')
+        log_error.save(operation="Salvar_Planilha", status="Error", type_error=str(error), descript=f"{type(error)} -> {error_descript}")
+
         
 class LogOperation:
     def __init__(self, date=datetime.now(), filename='registros.csv') -> None:
@@ -115,7 +130,7 @@ if __name__ == "__main__":
 
         gerar_contratos(df=dados['novos_contratos'], navegador=bot_navegador, path=path)
         
-        gerar_pagamentos(df=dados['novos_pagamentos'], navegador=bot_navegador)
+        gerar_pagamentos(df=dados['novos_pagamentos'], navegador=bot_navegador, path=path)
         
         print("fim")
     

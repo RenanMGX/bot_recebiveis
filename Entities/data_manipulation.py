@@ -60,11 +60,12 @@ class XWtoDF:
                     df['novos_contratos'] = data
                     
                     
-        for app_open in xw.apps:
-            if app_open.books[0].name == path.split("\\")[-1]:
-                app_open.kill()
-            elif app_open.books[0].name == 'Pasta1':
-                app_open.kill()
+        for apps_xw in xw.apps:
+            for open_apps in apps_xw.books:
+                if open_apps.name in path:
+                    open_apps.close()
+                    if len(xw.apps) <= 0:
+                        apps_xw.kill()
         
         return df
     
@@ -87,11 +88,39 @@ class XWtoDF:
                     #sheet.range('A1').expand().value = dados_para_adicionar
             wb.save()
         
-        for app_open in xw.apps:
-            if app_open.books[0].name == path.split("\\")[-1]:
-                app_open.kill()
-            elif app_open.books[0].name == 'Pasta1':
-                app_open.kill()
+        for apps_xw in xw.apps:
+            for open_app in apps_xw.books:
+                if open_app.name in path:
+                    open_app.close()
+                    if len(xw.apps):
+                        apps_xw.kill()
+                        
+    @staticmethod
+    def save_excel_pagamento(*, path:str, df:pd.DataFrame, sheet_name_to_save:str) -> None:
+        app = xw.App(visible=False)
+        dados_para_adicionar:list = df.values.tolist()
+        dados_para_adicionar.insert(0, df.columns.tolist())
+        
+        status_script = [x for x in df['Status_Script']]
+        status_script.insert(0, 'Status_Script')
+        
+        with app.books.open(path)as wb:
+            for sheet_name in wb.sheet_names:
+                if sheet_name_to_save in sheet_name:
+                    sheet = wb.sheets[wb.sheet_names.index(sheet_name)]
+                    for x in range(len(status_script)): sheet.range(f'Q{x+1}').value = status_script[x]
+                    #import pdb; pdb.set_trace()
+                    
+                    #sheet.range('A1').expand().value = dados_para_adicionar
+            wb.save()
+        
+        for apps_xw in xw.apps:
+            for open_app in apps_xw.books:
+                if open_app.name in path:
+                    open_app.close()
+                    if len(xw.apps):
+                        apps_xw.kill()
+                        
 
 if __name__ == "__main__":
     dados = XWtoDF.read_excel("#materiais/planilha para testes.xlsx")

@@ -29,11 +29,11 @@ class Ui_Interface(object):
         
     def setupUi(self, Interface):
         Interface.setObjectName("Interface")
-        Interface.resize(450, 200)
+        Interface.resize(450, 210)
         Interface.setCursor(QtGui.QCursor(QtCore.Qt.ArrowCursor)) #type: ignore
         
         self.horizontalLayoutWidget = QtWidgets.QWidget(Interface)
-        self.horizontalLayoutWidget.setGeometry(QtCore.QRect(10, 10, 411, 151))
+        self.horizontalLayoutWidget.setGeometry(QtCore.QRect(10, 10, 650, 200))
         self.horizontalLayoutWidget.setObjectName("horizontalLayoutWidget")
         
         self.box_principal = QtWidgets.QHBoxLayout(self.horizontalLayoutWidget)
@@ -117,14 +117,15 @@ class Ui_Interface(object):
         
         self.carregar_arquivos = QtWidgets.QPushButton(self.tela_arquivo)
         self.carregar_arquivos.setObjectName("Carregar Arquivo")
-        self.carregar_arquivos.setGeometry(QtCore.QRect(100, 00, 110, 23))
+        self.carregar_arquivos.setGeometry(QtCore.QRect(100, 00, 140, 25))
         self.carregar_arquivos.clicked.connect(self.carregar_planilha)
         
         self.texto_retorno = QtWidgets.QLabel(self.tela_arquivo)
         self.texto_retorno.setObjectName("Texto Retorno")
-        self.texto_retorno.setGeometry(QtCore.QRect(30, 30, 300, 63))
+        self.texto_retorno.setGeometry(QtCore.QRect(30, 30, 300, 125))
         self.texto_retorno.setWordWrap(True)
         self.texto_retorno.setText("")
+        #self.texto_retorno.setStyleSheet("border: 2px solid black;")
         
         # self.iniciar_contratos = QtWidgets.QPushButton(self.tela_arquivo)
         # self.iniciar_contratos.setObjectName("Iniciar Contratos")
@@ -134,7 +135,7 @@ class Ui_Interface(object):
         
         self.avancar = QtWidgets.QPushButton(self.tela_arquivo)
         self.avancar.setObjectName("Avançar")
-        self.avancar.setGeometry(QtCore.QRect(100, 125, 110, 23))
+        self.avancar.setGeometry(QtCore.QRect(100, 160, 110, 23))
         self.avancar.setVisible(False)
         self.avancar.clicked.connect(self.avancar_pagina)
         
@@ -299,10 +300,11 @@ class Ui_Interface(object):
                 gerar_contratos(df=self.dados['novos_contratos'], navegador=bot_navegador, path=self.path)
             
             if self.caixa_pagamentos.isChecked():
-                gerar_pagamentos(df=self.dados['novos_pagamentos'], navegador=bot_navegador)
+                gerar_pagamentos(df=self.dados['novos_pagamentos'], navegador=bot_navegador, path=self.path)
                     
             print("\nConcluido!")    
             self.texto_retorno.setText("Concluido!")
+            self.logar.setText(self.__translate("Interface", "Voltar"))
             self.logar.clicked.connect(self.fechar_tela_login)
                 
         except Exception as error:
@@ -316,7 +318,7 @@ class Ui_Interface(object):
             
 
 if __name__ == "__main__":
-    version = "Beta 1.1"
+    version = "Beta 1.3"
     
     modos = {"prd": "https://patrimarengenharia.imobme.com/",
             "qas": "http://qas.patrimarengenharia.imobme.com/"}

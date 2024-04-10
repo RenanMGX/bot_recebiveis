@@ -242,14 +242,18 @@ class ImobmeBot:
         # self._find_element(By.XPATH, f'//*[@id="result-table"]/tbody/tr[{numero_endereco_contrato[0]}]', scroll=True)
         # self.wait_load(wait_first=1)
         
-        self.browser.maximize_window()
-        target = f'//*[@id="result-table"]/tbody/tr[{numero_endereco_contrato[0]}]'
-        try:
-            self._find_element(By.XPATH, target, scroll=True).click()
-        except:
-            self._find_element(By.ID, 'result-table', scroll=True)
-            self._find_element(By.XPATH, target).click()        
-        self.wait_load(wait_first=1)
+        # self.browser.maximize_window()
+        # target = f'//*[@id="result-table"]/tbody/tr[{numero_endereco_contrato[0]}]'
+        # try:
+        #     self._find_element(By.XPATH, target, scroll=True).click()
+        # except:
+        #     self._find_element(By.ID, 'result-table', scroll=True)
+        #     self._find_element(By.XPATH, target).click()        
+        # self.wait_load(wait_first=1)
+        
+        contrato_lista = contratos_encontrador[numero_endereco_contrato[0]-1].split(" ")[0]
+        self.browser.get(self.__url_principal + f'Contrato//PosicaoFinanceira/{contrato_lista}')
+        self.wait_load()
         
         self._find_element(By.XPATH, '/html',scroll=True)
         self._find_element(By.XPATH, '//*[@id="AgreementTabs"]/li[2]/a').click()
