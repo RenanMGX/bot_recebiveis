@@ -18,13 +18,24 @@ class ImobmeBot:
             
         self.browser.get(self.__url_principal)
         self.browser.get(self.__url_principal)
+        self.browser.maximize_window()
         
         self.__user:str = user
         self.__password:str = password
         
         self._login()
     
-    def _find_element(self, by, target:str, browser=None, timeout:int=10, force:bool=False, speak=False) -> WebElement:
+    def _find_element(
+        self, 
+        by, 
+        target:str, 
+        browser=None, 
+        timeout:int=10, 
+        force:bool=False, 
+        speak:bool=False, 
+        scroll:bool=False
+    ) -> WebElement:
+
         for _ in range(timeout*4):
             try:
                 result:WebElement
@@ -34,6 +45,8 @@ class ImobmeBot:
                     browser_temp: WebElement = browser
                     result = browser_temp.find_element(by, target)
                 print(f"{target=}") if speak else None
+                if scroll:
+                    result.location_once_scrolled_into_view
                 return result
             except:
                 sleep(0.25)
@@ -44,7 +57,7 @@ class ImobmeBot:
         
         raise Exception(f"{by=}, {target=} | não foi encontrado!")
     
-    def _login(self, tentar=False) -> None:
+    def _login(self, tentar:bool=False) -> None:
         if tentar:
             try:
                 sleep(1)
@@ -69,6 +82,7 @@ class ImobmeBot:
         self._login(tentar=True)
         self.browser.get(self.__url_principal + 'Contrato/')
         self.browser.get(self.__url_principal + 'Contrato/')
+        self.browser.maximize_window()
         
         #aba pesquisa
         campo_empreendimento:WebElement = self._find_element(By.ID, 'EmpreendimentoId_chzn')
@@ -102,12 +116,14 @@ class ImobmeBot:
             if li_unidade.text == str(int(dados['Unidade'])):
                 li_unidade.click()
         
+        #aba contrato (Novo)
+        self._find_element(By.XPATH, '/html',scroll=True)
         self._find_element(By.XPATH, '//*[@id="AgreementTabs"]/li[2]/a').click()
         
-        #aba contrato (Novo)
+        
         self._find_element(By.XPATH, '//*[@id="Tipo"]/option[3]').click() # tipo Contrato > Avulso
         
-        self._find_element(By.ID, 'DataChave').clear()
+        self._find_element(By.ID, 'DataChave', scroll=True).clear()
         self._find_element(By.ID, 'DataChave').send_keys(dados['Data Chave'].strftime('%d%m%Y')) #data Chave
         
         self._find_element(By.ID, 'DataJuros').clear()
@@ -189,23 +205,24 @@ class ImobmeBot:
         self._login(tentar=True)
         self.browser.get(self.__url_principal + 'Contrato/')
         self.browser.get(self.__url_principal + 'Contrato/')
+        self.browser.maximize_window()
 
-        self.wait_load()   
+        self._find_element(By.XPATH, '/html',scroll=True)
         self._find_element(By.ID, 'Keyword').clear()  
         self._find_element(By.ID, 'Keyword').send_keys(str(dados['NO_MUTUARIO'])) 
-        
+        self.wait_load(wait_first=1)
         # import pdb; pdb.set_trace()
         # self._find_element(By.ID, 'feedback-loader').get_attribute('style')
         # 'display: block;'
         if self._find_element(By.ID, 'EmpreendimentoId_chzn').text != 'Empreendimento':
             self._find_element(By.XPATH, '/html/body/div/div/section/div[2]/div/div/div[2]/form/div[1]/div/a/abbr', timeout=1, force=True).click()
-            self.wait_load()
+            self.wait_load(wait_first=1)
         
-        self.wait_load()
-        if self.browser.find_element(By.TAG_NAME, 'tbody').text == 'Nenhum registro':
-            raise TimeoutError("Nenhum contrato Encontrado")
+        # self.wait_load()
+        # if self.browser.find_element(By.TAG_NAME, 'tbody').text == 'Nenhum registro':
+        #     raise TimeoutError("Nenhum contrato Encontrado")
         
-        self.wait_load(wait_first=2)
+        
         tbody:WebElement = self._find_element(By.ID, 'result-table')
         contratos_encontrador:list = tbody.find_element(By.TAG_NAME, 'tbody').text.split('\n')
         
@@ -213,19 +230,32 @@ class ImobmeBot:
         for num in range(len(contratos_encontrador)): 
             if ('Cob. Juros de Obra' in contratos_encontrador[num]) and ('Ativo' in contratos_encontrador[num]):
                 numero_endereco_contrato.append(num+1)
+                
+        if 'Nenhum registro' in contratos_encontrador:
+            raise TimeoutError("Nenhum contrato Encontrado")        
         
         if len(numero_endereco_contrato) > 1:
             raise ReferenceError("foi encontrado mais de 2 contratos ativos")
         elif len(numero_endereco_contrato) <= 0:
             raise ReferenceError("não foi encontrado nenhum contrato ativo")
         
-        self.wait_load(wait_first=2)
-        self._find_element(By.XPATH, f'//*[@id="result-table"]/tbody/tr[{numero_endereco_contrato[0]}]').click()
+        # self._find_element(By.XPATH, f'//*[@id="result-table"]/tbody/tr[{numero_endereco_contrato[0]}]', scroll=True)
+        # self.wait_load(wait_first=1)
         
+        self.browser.maximize_window()
+        target = f'//*[@id="result-table"]/tbody/tr[{numero_endereco_contrato[0]}]'
+        try:
+            self._find_element(By.XPATH, target, scroll=True).click()
+        except:
+            self._find_element(By.ID, 'result-table', scroll=True)
+            self._find_element(By.XPATH, target).click()        
+        self.wait_load(wait_first=1)
+        
+        self._find_element(By.XPATH, '/html',scroll=True)
         self._find_element(By.XPATH, '//*[@id="AgreementTabs"]/li[2]/a').click()
         
-        self._find_element(By.XPATH, '//*[@id="TipoParcelaId"]/option[3]').click()
-        self._find_element(By.XPATH, '//*[@id="TipoAvulsoId"]/option[3]').click()
+        self._find_element(By.XPATH, '//*[@id="TipoParcelaId"]/option[3]', scroll=True).click()
+        self._find_element(By.XPATH, '//*[@id="TipoAvulsoId"]/option[3]', scroll=True).click()
         
         obs:str = f"VCTO CEF {dados['DT_VENCIMENTO'].strftime('%d/%m/%Y')}"
         self._find_element(By.ID, 'ObservacaoAvulso').send_keys(obs)
@@ -257,10 +287,16 @@ class ImobmeBot:
         
         #self._find_element(By.XPATH, '//*[@id="Footer"]/div/button')
 
-    def wait_load(self, wait_first=1) -> None:
+    def wait_load(
+        self, 
+        wait_first:int|float=1, 
+        wait_before:int|float=0.1
+    ) -> None:
+        
         sleep(wait_first)
         while self._find_element(By.ID, 'feedback-loader').get_attribute('style') == 'display: block;':
-            sleep(0.50)
+            sleep(0.005)
+        sleep(wait_before)
     
     @staticmethod
     def calcular_datas_vencimento(data:datetime) -> datetime:
