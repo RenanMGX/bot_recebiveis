@@ -7,6 +7,9 @@ import pandas as pd
 import traceback
 import xlwings as xw # type: ignore
 import os
+from time import sleep
+from xlwings.main import Book, Sheet
+
 
 
 def gerar_contratos(*, df:pd.DataFrame, navegador:ImobmeBot, path:str) -> None:
@@ -79,7 +82,64 @@ def gerar_pagamentos(*, df:pd.DataFrame, navegador:ImobmeBot, path:str):
         error_descript = traceback.format_exc().replace('\n', ' | ')
         log_error.save(operation="Salvar_Planilha", status="Error", type_error=str(error), descript=f"{type(error)} -> {error_descript}")
 
-        
+def gerar_aba_associativa(*, bot:ImobmeBot, path:str):
+    df = pd.read_excel(path, dtype=str)
+    df["Data de assinatura"] = df["Data de assinatura"].astype("datetime64[us]")
+    
+    lista_final = []
+    for row,value in df.iterrows():
+        try:
+            resultado = bot.aba_associativa(dados=value)
+        except Exception as error:
+            print(error)
+            resultado = f"erro: {error}"
+        lista_final.append(resultado)
+        del resultado
+    
+    fechar_excel(path)
+    app = xw.App(visible=False)
+    with app.books.open(path)as wb:
+        #import pdb; pdb.set_trace()
+        ws:Sheet = wb.sheets[0]
+        ws.range('K2').value = [[x] for x in lista_final]
+        wb.save()
+    app.kill()
+    fechar_excel(path)
+
+
+
+def fechar_excel(caminho:str, *, 
+                trace_back:bool=False,
+                wait:int=0,
+                multiplas_tentativas:bool=False,
+                timeout:int=60
+                ) -> bool|Exception:
+    if wait > 0:
+        if isinstance(wait, int):
+            sleep(wait)
+    
+    try:
+        for _ in range(timeout):
+            for app in xw.apps:
+                for app_open in app.books:
+                    app_open:Book
+                    if app_open.name in caminho:
+                        print(f"fechou {app_open.name}")
+                        app_open.close()
+                        if len(xw.apps) == 0:
+                            app.kill()
+                        
+                        return True
+            if not multiplas_tentativas:
+                break
+            sleep(1)
+        return False    
+    except Exception as error:
+        print(f"não foi possivel fechar o {caminho=}\nError: {traceback.format_exc()}")
+        if trace_back:
+            raise error
+        return error
+    
 class LogOperation:
     def __init__(self, date=datetime.now(), filename='registros.csv') -> None:
         self.date:datetime = date

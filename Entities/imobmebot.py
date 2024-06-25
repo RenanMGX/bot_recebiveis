@@ -6,12 +6,18 @@ from Entities.credencital_load import Credential
 from time import sleep
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
+import pdb
+from typing import Literal
+from pandas.core.series import Series
 
 class ImobmeBot:
-    def __init__(self, *, user:str, password:str, url:str) -> None:
+    @property
+    def url_principal(self):
+        return self.__url_principal
+    def __init__(self, *, user:str, password:str, url:Literal["http://qas.patrimarengenharia.imobme.com/", "https://patrimarengenharia.imobme.com/"]) -> None:
         self.browser: webdriver.Chrome = webdriver.Chrome()
         
-        if not url[-1] == '/':
+        if not url.endswith('/'):
             self.__url_principal:str = url + '/'
         else:
             self.__url_principal = url
@@ -222,13 +228,15 @@ class ImobmeBot:
         # if self.browser.find_element(By.TAG_NAME, 'tbody').text == 'Nenhum registro':
         #     raise TimeoutError("Nenhum contrato Encontrado")
         
+        contrato_lista:str = ""
         
+        self.wait_load(wait_first=0, wait_before=1)
         tbody:WebElement = self._find_element(By.ID, 'result-table')
         contratos_encontrador:list = tbody.find_element(By.TAG_NAME, 'tbody').text.split('\n')
         
         numero_endereco_contrato:list = []
         for num in range(len(contratos_encontrador)): 
-            if ('Cob. Juros de Obra' in contratos_encontrador[num]) and ('Ativo' in contratos_encontrador[num]):
+            if (' Cob. Juros de Obra ' in contratos_encontrador[num]) and (' Ativo ' in contratos_encontrador[num]) and (dados['NO_MUTUARIO'] in contratos_encontrador[num]):
                 numero_endereco_contrato.append(num+1)
                 
         if 'Nenhum registro' in contratos_encontrador:
@@ -252,11 +260,17 @@ class ImobmeBot:
         # self.wait_load(wait_first=1)
         
         contrato_lista = contratos_encontrador[numero_endereco_contrato[0]-1].split(" ")[0]
+        if contrato_lista == "":
+            raise RecursionError("Contrato não identificado")        
         self.browser.get(self.__url_principal + f'Contrato//PosicaoFinanceira/{contrato_lista}')
         self.wait_load()
+        del contrato_lista
         
         self._find_element(By.XPATH, '/html',scroll=True)
         self._find_element(By.XPATH, '//*[@id="AgreementTabs"]/li[2]/a').click()
+        
+        if not dados['NO_MUTUARIO'] in self._find_element(By.ID, 'proprietario-container').text:
+            raise ReferenceError("pagina do contrato errada!")
         
         self._find_element(By.XPATH, '//*[@id="TipoParcelaId"]/option[3]', scroll=True).click()
         self._find_element(By.XPATH, '//*[@id="TipoAvulsoId"]/option[3]', scroll=True).click()
@@ -290,6 +304,125 @@ class ImobmeBot:
         self.wait_load()
         
         #self._find_element(By.XPATH, '//*[@id="Footer"]/div/button')
+
+    def aba_associativa(self, *, dados:dict|Series):
+        self._login(tentar=True)
+        self.browser.get(self.url_principal + 'Contrato/')
+        self.browser.get(self.url_principal + 'Contrato/')
+        self.browser.maximize_window()
+        
+        self._find_element(By.ID, 'Keyword').clear()  
+        self._find_element(By.ID, 'Keyword').send_keys(str(dados['CPF']))
+        
+        if self._find_element(By.ID, 'EmpreendimentoId_chzn').text != 'Empreendimento':
+            self._find_element(By.XPATH, '/html/body/div/div/section/div[2]/div/div/div[2]/form/div[1]/div/a/abbr', timeout=1, force=True).click()
+            self.wait_load(wait_first=1)
+        #pdb.set_trace()  
+          
+        contrato_lista:str = ""
+        
+        self.wait_load(wait_first=1, wait_before=1)
+        tbody:WebElement = self._find_element(By.ID, 'result-table')
+        contratos_encontrador:list = tbody.find_element(By.TAG_NAME, 'tbody').text.split('\n')
+        
+        numero_endereco_contrato:list = []
+        
+        #	
+        for num in range(len(contratos_encontrador)): 
+            if ((' PCV ' in contratos_encontrador[num]) or (' Cessão ' in contratos_encontrador[num])) and (' Ativo ' in contratos_encontrador[num]):
+                numero_endereco_contrato.append(num+1)
+        
+        
+        
+        
+        
+        if 'Nenhum registro' in contratos_encontrador:
+            raise TimeoutError("Nenhum contrato Encontrado")        
+        
+        if len(numero_endereco_contrato) > 1:
+            #pdb.set_trace()
+            raise ReferenceError("foi encontrado mais de 2 contratos ativos")
+        elif len(numero_endereco_contrato) <= 0:
+            #pdb.set_trace()
+            raise ReferenceError("não foi encontrado nenhum contrato ativo")
+        
+        contrato_lista = contratos_encontrador[numero_endereco_contrato[0]-1].split(" ")[0]
+        if contrato_lista == "":
+            raise RecursionError("Contrato não identificado")  
+        
+        #
+            
+        self.browser.get(self.url_principal + f'/Contrato/Associativo/{contrato_lista}')
+        self.wait_load()
+        del contrato_lista
+        
+        #pdb.set_trace()
+        
+        existe_serie_associativa = False
+        tags_h4 = self.browser.find_elements(By.TAG_NAME, 'h4')
+        for tag_h4 in tags_h4:
+            if 'Série Associativa' == tag_h4.text:
+                existe_serie_associativa = True
+        if not existe_serie_associativa:
+            return "sem parcela associativo"
+        
+        try:
+            self._find_element(By.ID, 'ContratoCd').clear()  
+            self._find_element(By.ID, 'ContratoCd').send_keys(str(dados['Contrato']))
+            
+            self._find_element(By.ID, 'DataAssinatura').clear()
+            data:datetime = dados['Data de assinatura']
+            self._find_element(By.ID, 'DataAssinatura').send_keys(data.strftime('%d%m%Y'))
+            
+            self._find_element(By.ID, 'Agencia').clear()  
+            self._find_element(By.ID, 'Agencia').send_keys(str(dados['Agência']))
+            
+            self._find_element(By.ID, 'Banco').clear()  
+            self._find_element(By.ID, 'Banco').send_keys(str(dados['Banco']))
+            
+            self.limpar_campo(By.NAME, 'ValorTerreno')
+            self._find_element(By.NAME, 'ValorTerreno').send_keys(str(dados['Valor do terreno']).replace('.', ','))
+            
+            self.limpar_campo(By.NAME, 'ValorFGTS')
+            self._find_element(By.NAME, 'ValorFGTS').send_keys(str(dados['Valor do FGTS']).replace('.', ','))
+            
+            self.limpar_campo(By.NAME, 'ValorSubsidio')
+            self._find_element(By.NAME, 'ValorSubsidio').send_keys(str(dados['Valor do subsídio']).replace('.', ','))
+            
+            self.limpar_campo(By.NAME, 'ValorFinanciamento')
+            self._find_element(By.NAME, 'ValorFinanciamento').send_keys(str(dados['Valor do financiamento']).replace('.', ','))
+        except:
+            return "Já foi executado não é possivel alterar"
+        
+        
+        self.wait_load(wait_before=1)
+        
+        #pdb.set_trace()
+        self._find_element(By.ID, 'Salvar').click()
+        
+        lista_error:list
+        try:
+            lista_error = self.browser.find_element(By.CLASS_NAME, "validation-summary-errors").text.split("\n")
+        except:
+            lista_error = []
+        
+        retorno:str = ""
+        if len(lista_error) > 0 :
+            for erro in lista_error:
+                if 'A soma dos Valores de FGTS, Subsídio e Financiamento deve ser igual ao valor da Série Associativa.' == erro:
+                    valor_atualizado = self._find_element(By.XPATH, '//*[@id="Content"]/section/div[2]/div/div/div[3]/div/div/table/tbody/tr/td[8]').text
+                    retorno += f"{erro} valor atualizado = {valor_atualizado} / "
+                else:
+                    retorno += f"{erro} / "
+        else:
+            retorno = "Concluido!"
+        
+        
+        return retorno
+        
+    def limpar_campo(self, by:str, target:str):
+        while len(str(self._find_element(by, target).get_attribute('value'))) > 0:
+            self._find_element(by, target).send_keys(Keys.BACKSPACE)
 
     def wait_load(
         self, 

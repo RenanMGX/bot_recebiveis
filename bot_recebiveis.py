@@ -21,19 +21,23 @@ from tkinter import filedialog
 from Entities.data_manipulation import XWtoDF
 from PyQt5 import QtCore, QtGui, QtWidgets
 from Entities.imobmebot import ImobmeBot
-from main import gerar_contratos, gerar_pagamentos
+from main import gerar_contratos, gerar_pagamentos, gerar_aba_associativa
+from typing import Literal
+from main import fechar_excel
 
 class Ui_Interface(object):
     def __init__(self):
         self.path = ""
+        self.tarefa_executar:Literal["Rebebiveis", "Aba Associativa"] = "Rebebiveis"
         
     def setupUi(self, Interface):
         Interface.setObjectName("Interface")
-        Interface.resize(450, 210)
+        Interface.resize(450, 300)
         Interface.setCursor(QtGui.QCursor(QtCore.Qt.ArrowCursor)) #type: ignore
         
+        
         self.horizontalLayoutWidget = QtWidgets.QWidget(Interface)
-        self.horizontalLayoutWidget.setGeometry(QtCore.QRect(10, 10, 650, 200))
+        self.horizontalLayoutWidget.setGeometry(QtCore.QRect(10, 10, 650, 300))
         self.horizontalLayoutWidget.setObjectName("horizontalLayoutWidget")
         
         self.box_principal = QtWidgets.QHBoxLayout(self.horizontalLayoutWidget)
@@ -47,6 +51,7 @@ class Ui_Interface(object):
         #self.logar.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor)) #type: ignore
         self.logar.setObjectName("logar")
         self.logar.clicked.connect(self.ir_tela_login)
+        
         
         self.box_butoes.addWidget(self.logar)
         
@@ -115,14 +120,22 @@ class Ui_Interface(object):
         self.tela_arquivo = QtWidgets.QWidget()
         self.tela_arquivo.setObjectName("Tela Arquivo")
         
+        self.alternar = QtWidgets.QPushButton(self.horizontalLayoutWidget)
+        self.alternar.setObjectName("Alternar")
+        self.alternar.setGeometry(QtCore.QRect(180, 0, 140, 25))
+        self.alternar.clicked.connect(self.alterar_tarefa)
+        
+        # self.texto_arquivo = QtWidgets.QLabel(self.tela_arquivo)
+        # self.texto_arquivo.setGeometry(QtCore.QRect(100, 0, 140, 25))
+        
         self.carregar_arquivos = QtWidgets.QPushButton(self.tela_arquivo)
-        self.carregar_arquivos.setObjectName("Carregar Arquivo")
-        self.carregar_arquivos.setGeometry(QtCore.QRect(100, 00, 140, 25))
+        self.carregar_arquivos.setObjectName("Carregar Planilha")
+        self.carregar_arquivos.setGeometry(QtCore.QRect(100, 30, 140, 25))
         self.carregar_arquivos.clicked.connect(self.carregar_planilha)
         
         self.texto_retorno = QtWidgets.QLabel(self.tela_arquivo)
         self.texto_retorno.setObjectName("Texto Retorno")
-        self.texto_retorno.setGeometry(QtCore.QRect(30, 30, 300, 125))
+        self.texto_retorno.setGeometry(QtCore.QRect(30, 60, 300, 125))
         self.texto_retorno.setWordWrap(True)
         self.texto_retorno.setText("")
         #self.texto_retorno.setStyleSheet("border: 2px solid black;")
@@ -135,9 +148,15 @@ class Ui_Interface(object):
         
         self.avancar = QtWidgets.QPushButton(self.tela_arquivo)
         self.avancar.setObjectName("Avançar")
-        self.avancar.setGeometry(QtCore.QRect(100, 160, 110, 23))
+        self.avancar.setGeometry(QtCore.QRect(100, 190, 110, 23))
         self.avancar.setVisible(False)
         self.avancar.clicked.connect(self.avancar_pagina)
+        
+        self.iniciar2 = QtWidgets.QPushButton(self.tela_arquivo)
+        self.iniciar2.setObjectName("Iniciar")
+        self.iniciar2.setGeometry(QtCore.QRect(100, 190, 110, 23))
+        self.iniciar2.setVisible(False)
+        self.iniciar2.clicked.connect(self.iniciar_processo)
         
         self.multi_tela.addWidget(self.tela_arquivo)
         
@@ -163,10 +182,15 @@ class Ui_Interface(object):
         
         self.multi_tela.addWidget(self.tela_executar)
         
+   
+        
+        
+        
+        
         self.box_principal.addWidget(self.multi_tela)
 
         self.retranslateUi(Interface)
-        self.multi_tela.setCurrentIndex(1)
+        self.multi_tela.setCurrentIndex(1) # padão 1
         QtCore.QMetaObject.connectSlotsByName(Interface)
         
         
@@ -182,6 +206,7 @@ class Ui_Interface(object):
         # self.iniciar_contratos.setText(self.__translate("Interface", "Iniciar Contratos"))
         # self.iniciar_pagamentos.setText(self.__translate("Interface", "Iniciar Pagamentos"))
         self.iniciar.setText(self.__translate("Interface", "Iniciar"))
+        self.iniciar2.setText(self.__translate("Interface", "Iniciar"))
         
         self.avancar.setText(self.__translate("Interface", "Avançar"))
         
@@ -193,18 +218,25 @@ class Ui_Interface(object):
         
         self.caixa_contratos.setText(self.__translate("Interface", "Contratos"))
         self.caixa_pagamentos.setText(self.__translate("Interface", "Pagamentos"))
+        
+        self.alternar.setText(self.__translate("Interface", self.tarefa_executar))
+        
+        #self.texto_arquivo.setText(self.__translate("Interface", self.tarefa_executar))
 
     def test(self):
         print(self.caixa_contratos.isChecked())
     
     def ir_tela_login(self):
         self.multi_tela.setCurrentIndex(0)
+        self.alternar.setVisible(False)
         self.logar.setText(self.__translate("Interface", "Voltar"))
         self.logar.clicked.disconnect()
         self.logar.clicked.connect(self.fechar_tela_login)
         
     def fechar_tela_login(self):
         self.multi_tela.setCurrentIndex(1)
+        self.alternar.setVisible(True)
+        
         self.campo_login.setText(credencial.load()['user'])
         self.campo_senha.setText(credencial.load()['password'])
         self.logar.clicked.disconnect()
@@ -223,13 +255,18 @@ class Ui_Interface(object):
         self.texto_retorno.setText("")
         self.avancar.setVisible(False)
         
+        self.alternar.setVisible(False)
+        
         self.logar.setText(self.__translate("Interface", "Voltar"))
         self.logar.clicked.disconnect()
         self.logar.clicked.connect(self.fechar_tela_login)
         
     
     def carregar_planilha(self):
-        asyncio.create_task(self.load_file())
+        if self.tarefa_executar == 'Rebebiveis':
+            asyncio.create_task(self.load_file())
+        elif self.tarefa_executar == 'Aba Associativa':
+            asyncio.create_task(self.load_file_associativa())
     async def load_file(self):
         Interface.hide()
         try:
@@ -271,11 +308,7 @@ class Ui_Interface(object):
             if valido:
                 # self.iniciar_contratos.setVisible(True)
                 # self.iniciar_pagamentos.setVisible(True)
-                for app_open in xw.apps:
-                    if app_open.books[0].name == self.path.split("\\")[-1]:
-                        app_open.kill()
-                    elif app_open.books[0].name == 'Pasta1':
-                        app_open.kill()
+                fechar_excel(self.path)
                         
                 self.dados:Dict[str, pd.DataFrame] = XWtoDF.read_excel(self.path)
                 self.avancar.setVisible(True)
@@ -288,24 +321,69 @@ class Ui_Interface(object):
             Interface.show()
             Interface.raise_()
             Interface.activateWindow()
+            
+    async def load_file_associativa(self):
+        Interface.hide()
+        try:
+            valido:bool = True
+            texto_para_retorno:list = []
+            self.path = filedialog.askopenfilename()
+            
+            self.texto_retorno.setText("")
+            if not (self.path.endswith(".xlsx")) and not (self.path.endswith(".xlsm")):
+                texto_para_retorno.append("Selecione apenas planilhas excel")
+                valido = False
+            else:
+                texto_para_retorno.append(f"'{self.path}'\n")
+            
+            texto_para_retorno.append("OK!")
+            valido = True    
+            texto_para_exibir:str = ""
+            for texto in texto_para_retorno:
+                texto_para_exibir += texto + "\n"
+                
+            self.texto_retorno.setText(texto_para_exibir)
+            
+            if valido:
+                print("é valido")
+                # self.iniciar_contratos.setVisible(True)
+                # self.iniciar_pagamentos.setVisible(True)
+                fechar_excel(self.path)
+                
+                self.iniciar2.setVisible(True)
+                
+        except Exception as error:
+            print(traceback.format_exc())
+            self.texto_retorno.setText(f"{error}")
+            self.fechar_tela_login()
+        finally:    
+            Interface.show()
+            Interface.raise_()
+            Interface.activateWindow()
+            
 
     def iniciar_processo(self):
         asyncio.create_task(self.start_process())
     async def start_process(self):
         Interface.hide()
         try:
-            bot_navegador:ImobmeBot = ImobmeBot(user=credencial.load()['user'], password=credencial.load()['password'], url=url_execute)
+            bot_navegador:ImobmeBot = ImobmeBot(user=credencial.load()['user'], password=credencial.load()['password'], url=url_execute)#type: ignore
             
-            if self.caixa_contratos.isChecked():
-                gerar_contratos(df=self.dados['novos_contratos'], navegador=bot_navegador, path=self.path)
+            if self.tarefa_executar == 'Rebebiveis':
+                if self.caixa_contratos.isChecked():
+                    gerar_contratos(df=self.dados['novos_contratos'], navegador=bot_navegador, path=self.path)
+                
+                if self.caixa_pagamentos.isChecked():
+                    gerar_pagamentos(df=self.dados['novos_pagamentos'], navegador=bot_navegador, path=self.path)
             
-            if self.caixa_pagamentos.isChecked():
-                gerar_pagamentos(df=self.dados['novos_pagamentos'], navegador=bot_navegador, path=self.path)
+            elif self.tarefa_executar == 'Aba Associativa':
+                gerar_aba_associativa(bot=bot_navegador, path=self.path)
                     
             print("\nConcluido!")    
             self.texto_retorno.setText("Concluido!")
             self.logar.setText(self.__translate("Interface", "Voltar"))
             self.logar.clicked.connect(self.fechar_tela_login)
+            self.fechar_tela_login()
                 
         except Exception as error:
             print(traceback.format_exc())
@@ -315,15 +393,33 @@ class Ui_Interface(object):
             Interface.show()
             Interface.raise_()
             Interface.activateWindow()
-            
+    
+    def alterar_tarefa(self):
+        #self.ir_tela_login()
+        if self.tarefa_executar == 'Rebebiveis':
+            self.tarefa_executar = 'Aba Associativa'
+        elif self.tarefa_executar == 'Aba Associativa':
+            self.tarefa_executar = 'Rebebiveis'
+        
+        self.alternar.setText(self.__translate("Interface", self.tarefa_executar))
+        
+        self.texto_retorno.setText("")
+        self.avancar.setVisible(False)
+        
+        self.path = ""
+        
+        self.iniciar2.setVisible(False)
+        
+        self.fechar_tela_login()
+        #self.fechar_tela_login() 
 
 if __name__ == "__main__":
-    version = "Beta 1.3"
+    version = "v2.0"
     
     modos = {"prd": "https://patrimarengenharia.imobme.com/",
             "qas": "http://qas.patrimarengenharia.imobme.com/"}
     
-    choose_mod = "prd"
+    choose_mod:Literal["prd", "qas"] = 'prd'
     url_execute = modos[choose_mod]
     
     credencial = Credential("imobme_credential")
