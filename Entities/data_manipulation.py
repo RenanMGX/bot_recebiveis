@@ -1,5 +1,6 @@
 import pandas as pd
 import xlwings as xw # type: ignore
+from xlwings.main import Book, Sheet
 
 class XWtoDF:
     @staticmethod
@@ -32,7 +33,8 @@ class XWtoDF:
             df:dict = {}
             
             for sheet_name in wb.sheet_names:
-                sheet = wb.sheets[sheet_name]
+                sheet_name:str
+                sheet:Sheet = wb.sheets[sheet_name]
                 sheet.api.AutoFilter.ShowAllData()
                 
                 ultima_coluna = sheet.api.UsedRange.Columns.Count
@@ -62,6 +64,7 @@ class XWtoDF:
                     
         for apps_xw in xw.apps:
             for open_apps in apps_xw.books:
+                open_apps:Book
                 if open_apps.name in path:
                     open_apps.close()
                     if len(xw.apps) <= 0:
@@ -81,7 +84,7 @@ class XWtoDF:
         with app.books.open(path)as wb:
             for sheet_name in wb.sheet_names:
                 if sheet_name_to_save in sheet_name:
-                    sheet = wb.sheets[wb.sheet_names.index(sheet_name)]
+                    sheet:Sheet = wb.sheets[wb.sheet_names.index(sheet_name)]
                     for x in range(len(solicitacao)): sheet.range(f'N{x+1}').value = solicitacao[x]
                     #import pdb; pdb.set_trace()
                     
@@ -90,6 +93,7 @@ class XWtoDF:
         
         for apps_xw in xw.apps:
             for open_app in apps_xw.books:
+                open_app:Book
                 if open_app.name in path:
                     open_app.close()
                     if len(xw.apps):
@@ -108,7 +112,7 @@ class XWtoDF:
             for sheet_name in wb.sheet_names:
                 if sheet_name_to_save in sheet_name:
                     sheet = wb.sheets[wb.sheet_names.index(sheet_name)]
-                    for x in range(len(status_script)): sheet.range(f'Q{x+1}').value = status_script[x]
+                    for x in range(len(status_script)): sheet.range(f'R{x+1}').value = status_script[x]
                     #import pdb; pdb.set_trace()
                     
                     #sheet.range('A1').expand().value = dados_para_adicionar
@@ -116,6 +120,7 @@ class XWtoDF:
         
         for apps_xw in xw.apps:
             for open_app in apps_xw.books:
+                open_app:Book
                 if open_app.name in path:
                     open_app.close()
                     if len(xw.apps):
@@ -123,4 +128,5 @@ class XWtoDF:
                         
 
 if __name__ == "__main__":
-    dados = XWtoDF.read_excel("#materiais/planilha para testes.xlsx")
+    dados = XWtoDF.read_excel(r'R:\bot_recebiveis\Base - Lançamento Juros de Obra - SCRIPT (2) 2.xlsx')
+    import pdb; pdb.set_trace()

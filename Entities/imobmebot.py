@@ -9,6 +9,7 @@ from dateutil.relativedelta import relativedelta
 import pdb
 from typing import Literal
 from pandas.core.series import Series
+from pandas import NaT
 
 class ImobmeBot:
     @property
@@ -181,10 +182,17 @@ class ImobmeBot:
             data_final:datetime = datetime(year=data_mais_30_dias.year, month=data_mais_30_dias.month, day=25)
         else:
             data_final = datetime(year=data_mais_30_dias.year, month=(data_mais_30_dias + relativedelta(months=1)).month, day=25)
+
+        if (data_plan:=dados['DATA_MOD']):
+            if isinstance(data_plan, datetime):
+                if not data_plan is NaT:
+                    data_final = data_plan
+
+
         self._find_element(By.ID, 'DataPrimeiraParcela').clear()
         self._find_element(By.ID, 'DataPrimeiraParcela').send_keys(data_final.strftime('%d%m%Y'))# Data Vencimento
         
-        #import pdb; pdb.set_trace()
+        #VOLTARRRRRRRRR
         self.wait_load()
         self._find_element(By.ID, 'btnSerieAdd').send_keys(Keys.ENTER)
         
@@ -192,7 +200,6 @@ class ImobmeBot:
         
         self._find_element(By.XPATH, '//*[@id="Footer"]/div/button').click()
         
-        #import pdb; pdb.set_trace()
         
         try:
             if (error:=self._find_element(By.XPATH, '//*[@id="Content"]/section/div[2]/div/div[1]/ul/li').text) != '':
@@ -294,16 +301,20 @@ class ImobmeBot:
         
         data_final:datetime = ImobmeBot.calcular_datas_vencimento(ultima_data)
         
-        self._find_element(By.ID, 'DataPrimeiraParcela').send_keys(data_final.strftime('%d%m%Y'))
+        if (data_plan:=dados['DATA_MOD']):
+            if isinstance(data_plan, datetime):
+                if not data_plan is NaT:
+                    data_final = data_plan
         
+        self._find_element(By.ID, 'DataPrimeiraParcela').send_keys(data_final.strftime('%d%m%Y'))
+        #VOLTARRRRR
         self._find_element(By.ID, 'btnSerieAdd').send_keys(Keys.ENTER)
         self.wait_load()
         
-        #import pdb; pdb.set_trace()
         self._find_element(By.XPATH, '//*[@id="Footer"]/div/button').click()
         self.wait_load()
         
-        #self._find_element(By.XPATH, '//*[@id="Footer"]/div/button')
+        self._find_element(By.XPATH, '//*[@id="Footer"]/div/button')
 
     def aba_associativa(self, *, dados:dict|Series):
         self._login(tentar=True)
